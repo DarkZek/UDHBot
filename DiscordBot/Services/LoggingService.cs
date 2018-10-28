@@ -6,7 +6,7 @@ using Discord.WebSocket;
 
 namespace DiscordBot.Services
 {
-    public class LoggingService : ILoggingService
+    public class LoggingService
     {
         private readonly DiscordSocketClient _client;
 
@@ -38,11 +38,5 @@ namespace DiscordBot.Services
             File.AppendAllText(_settings.ServerRootPath + @"/logXP.txt",
                 $"[{DateTime.Now:d/M/yy HH:mm:ss}] - {user} gained {totalXp}xp (base: {baseXp}, bonus : {bonusXp}, reduce : {xpReduce}) in channel {channel} {Environment.NewLine}");
         }
-    }
-
-    public interface ILoggingService
-    {
-        Task LogAction(string action, bool logToFile = true, bool logToChannel = true, Embed embed = null);
-        void LogXp(string channel, string user, float baseXp, float bonusXp, float xpReduce, int totalXp);
     }
 }

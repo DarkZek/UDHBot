@@ -6,7 +6,7 @@ namespace DiscordBot.Services
 {
     public class CasinoService
     {
-        private readonly ILoggingService _loggingService;
+        private readonly LoggingService _loggingService;
         private readonly UpdateService _updateService;
         private readonly DatabaseService _databaseService;
 
@@ -19,7 +19,7 @@ namespace DiscordBot.Services
 
         private Random _random;
 
-        public CasinoService(ILoggingService logging, UpdateService updateService, DatabaseService databaseService,
+        public CasinoService(LoggingService logging, UpdateService updateService, DatabaseService databaseService,
             Settings.Deserialized.Settings settings)
         {
             _loggingService = logging;
