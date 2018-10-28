@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -20,7 +21,7 @@ namespace DiscordBot.Modules
 {
     public class UserModule : ModuleBase
     {
-        private readonly LoggingService _loggingService;
+        private readonly ILoggingService _loggingService;
         private readonly DatabaseService _databaseService;
         private readonly UserService _userService;
         private readonly PublisherService _publisherService;
@@ -30,7 +31,7 @@ namespace DiscordBot.Modules
         private readonly Rules _rules;
         private static Settings.Deserialized.Settings _settings;
 
-        public UserModule(LoggingService loggingService, DatabaseService databaseService, UserService userService,
+        public UserModule(ILoggingService loggingService, DatabaseService databaseService, UserService userService,
             PublisherService publisherService, UpdateService updateService, CurrencyService currencyService,
             Rules rules, Settings.Deserialized.Settings settings)
         {
@@ -152,7 +153,7 @@ namespace DiscordBot.Modules
             sb.Append("Here's the top 10 of users by level :");
             for (int i = 0; i < users.Count; i++)
                 sb.Append(
-                    $"\n#{i + 1} - **{(await Context.Guild.GetUserAsync(users[i].userId)).Username}** ~ *Level* **{users[i].level}**");
+                    $"\n#{i + 1} - **{(await Context.Guild.GetUserAsync(users[i].userId))?.Username}** ~ *Level* **{users[i].level}**");
 
             await ReplyAsync(sb.ToString()).DeleteAfterTime(minutes: 3);
         }
@@ -167,7 +168,7 @@ namespace DiscordBot.Modules
             sb.Append("Here's the top 10 of users by karma :");
             for (int i = 0; i < users.Count; i++)
                 sb.Append(
-                    $"\n#{i + 1} - **{(await Context.Guild.GetUserAsync(users[i].userId)).Username}** ~ **{users[i].karma}** *Karma*");
+                    $"\n#{i + 1} - **{(await Context.Guild.GetUserAsync(users[i].userId))?.Username}** ~ **{users[i].karma}** *Karma*");
 
             await ReplyAsync(sb.ToString()).DeleteAfterTime(minutes: 3);
         }
@@ -181,7 +182,7 @@ namespace DiscordBot.Modules
             StringBuilder sb = new StringBuilder();
             sb.Append("Here's the top 10 of users by UDC :");
             for (int i = 0; i < users.Count; i++)
-                sb.Append($"\n#{i + 1} - **{(await Context.Guild.GetUserAsync(users[i].userId)).Username}** ~ **{users[i].udc}** *UDC*");
+                sb.Append($"\n#{i + 1} - **{(await Context.Guild.GetUserAsync(users[i].userId))?.Username}** ~ **{users[i].udc}** *UDC*");
 
             await ReplyAsync(sb.ToString()).DeleteAfterTime(minutes: 3);
         }
@@ -855,6 +856,21 @@ namespace DiscordBot.Modules
 
         #endregion
 
+        #region Translate
+        [Command("translate"), Summary("Translate a message. Syntax : !translate messageId language")]
+        private async Task Translate(ulong id, string language = "en")
+        {
+            await Translate((await Context.Channel.GetMessageAsync(id)).Content, language);
+        }
+        [Command("translate"), Summary("Translate a message. Syntax : !translate text language")]
+        private async Task Translate(string message, string language = "en")
+        {
+            await ReplyAsync($"Here: https://translate.google.com/#auto/{language}/{message.Replace(" ", "%20")}");
+            await Task.Delay(1000);
+            await Context.Message.DeleteAsync();
+        }
+        #endregion
+
         #region Currency
 
         [Command("currency"), Summary("Converts a currency. Syntax : !currency fromCurrency toCurrency")]
@@ -902,12 +918,19 @@ namespace DiscordBot.Modules
             await Context.Message.DeleteAfterTime(minutes: 3);
         }
 
+        [Command("members"), Summary("Displays number of members Syntax : !members")]
+        [Alias("MemberCount")]
+        private async Task MemberCount()
+        {
+            await ReplyAsync($"We currently have {(await Context.Guild.GetUsersAsync()).Count-1} members. Let's keep on growing as the strong community we are :muscle:");
+        }
+
         [Group("role")]
         public class RoleModule : ModuleBase
         {
-            private readonly LoggingService _logging;
+            private readonly ILoggingService _logging;
 
-            public RoleModule(LoggingService logging)
+            public RoleModule(ILoggingService logging)
             {
                 _logging = logging;
             }
@@ -971,26 +994,26 @@ namespace DiscordBot.Modules
 
                 await ReplyAsync("**The following roles are available on this server** :\n" +
                                  "\n" +
-                                 "We offer multiple roles to show what you specialize in, so if you are particularly good at anything, assign your role! \n" +
-                                 "You can have multiple specialties and your color is determined by the highest role you hold \n" +
+                                 "We offer multiple roles to show what you specialize in, whether it's professionally or as a hobby, so if there's something you're good at, assign the corresponding role! \n" +
+                                 "You can assign as much roles as you want, but try to keep them for what you're good at :) \n" +
                                  "\n" +
                                  "```To get the publisher role type **!pinfo** and follow the instructions." +
-                                 "https://www.assetstore.unity3d.com/en/#!/search/page=1/sortby=popularity/query=publisher:7285 <= Example Digits```\n");
-                await ReplyAsync("```!role add/remove Artists - The Graphic Designers, Artists and Modellers. \n" +
-                                 "!role add/remove 3DModelers - People behind every vertex. \n" +
-                                 "!role add/remove Coders - The valiant knights of programming who toil away, without rest. \n" +
-                                 "!role add/remove C# - If you are using C# to program in Unity3D \n" +
-                                 "!role add/remove Javascript - If you are using Javascript to program in Unity3D \n" +
-                                 "!role add/remove Game-Designers - Those who specialise in writing, gameplay design and level design.\n" +
-                                 "!role add/remove Audio-Artists - The unsung heroes of sound effects .\n" +
-                                 "!role add/remove Generalists - Generalist may refer to a person with a wide array of knowledge.\n" +
-                                 "!role add/remove Hobbyists - A person who is interested in Unity3D or Game Making as a hobby.\n" +
-                                 "!role add/remove Vector-Artists - The people who love to have infinite resolution.\n" +
-                                 "!role add/remove Voxel-Artist - People who love to voxelize the world.\n" +
-                                 "!role add/remove Students - The eager learners among us, never stop learning. \n" +
-                                 "!role add/remove VR-Developers - Passionate people who wants to bridge virtual world with real life. \n" +
-                                 "--------------------------------------------------------------------------------------------\n" +
-                                 "!role add/remove Streamer - If you stream on twitch/youtube or other discord integrated platforms content about tutorials and gaming. \n" +
+                                 "https://www.assetstore.unity3d.com/en/#!/search/page=1/sortby=popularity/query=publisher:1 <= Example Digits```\n");
+                await ReplyAsync("```!role add/remove 2D-Artists - If you're good at drawing, painting, digital art, concept art or anything else that's flat. \n" +
+                                 "!role add/remove 3D-Artists - If you are a wizard with vertices or like to forge your models from mud. \n" +
+                                 "!role add/remove Animators - If you like to bring characters to life. \n" +
+                                 "!role add/remove Technical-Artists - If you write tools and shaders to bridge the gap between art and programming. \n" +
+                                 "!role add/remove Programmers - If you like typing away to make your dreams come true (or the code come to your dreams). \n" +
+                                 "!role add/remove Game-Designers - If you are good at designing games, mechanics and levels.\n" +
+                                 "!role add/remove Audio-Engineers - If you live life to the rhythm of your own music and sounds.\n" +
+                                 "!role add/remove Generalists - If you like to dabble in everything.\n" +
+                                 "!role add/remove Hobbyists - If you're using Unity as a hobby.\n" +
+                                 "!role add/remove Students - If you're currently studying in a gamedev related field. \n" +
+                                 "!role add/remove XR-Developers - If you're a VR, AR or MR sorcerer. \n" +
+                                 "!role add/remove Writers - If you like writing lore, scenarii, characters and stories. \n" +
+                                 "======Below are special roles that will get pinged for specific reasons====== \n" +
+                                 "!role add/remove Subs-Gamejam - Will be pinged when there is UDC gamejam related news. \n" +
+                                 "!role add/remove Subs-Poll - Will be pinged when there is new public polls. \n" +
                                  "```");
             }
         }
